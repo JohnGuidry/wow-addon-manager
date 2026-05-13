@@ -2,8 +2,7 @@ import json
 import logging
 from pathlib import Path
 
-# Configure logging to handle errors gracefully
-logging.basicConfig(level=logging.INFO)
+# Use a module-level logger
 logger = logging.getLogger(__name__)
 
 class RegistryManager:
@@ -30,6 +29,8 @@ class RegistryManager:
     def _save(self):
         """Saves the current registry data to the specified path."""
         try:
+            # Ensure parent directory exists
+            self.path.parent.mkdir(parents=True, exist_ok=True)
             with self.path.open('w') as f:
                 json.dump(self.data, f, indent=2)
         except IOError as e:
@@ -51,5 +52,5 @@ class RegistryManager:
             self._save()
 
     def list_addons(self):
-        """Returns all installed addons."""
-        return self.data["installed_addons"]
+        """Returns a copy of all installed addons."""
+        return self.data["installed_addons"].copy()
