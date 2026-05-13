@@ -67,3 +67,14 @@ Example `config.json`:
   "api_key": "your_api_key_here"
 }
 ```
+
+## How it Works
+
+WAM uses a dual-layered approach to addon management:
+
+1. **Folder Analysis:** WAM scans the `.toc` files within your `AddOns` directory to identify versions and project IDs.
+2. **Local Registry:** Information about installed addons is mirrored in `.wam_registry.json`. This allows WAM to track which folders belong to which addon, ensuring that "multi-folder" addons are updated and removed cleanly.
+
+## License
+
+This project is licensed under the **GPLv3** License.
