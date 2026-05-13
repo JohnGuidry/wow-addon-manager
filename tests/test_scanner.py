@@ -38,5 +38,10 @@ class TestScanner(unittest.TestCase):
             self.assertEqual(addons[addon_name]['Version'], '1.2.3')
             self.assertNotIn("IgnoredFolder", addons)
 
+    def test_scan_nonexistent_directory(self):
+        scanner = AddonScanner("/non/existent/path")
+        addons = scanner.scan()
+        self.assertEqual(addons, {})
+
 if __name__ == '__main__':
     unittest.main()
