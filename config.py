@@ -1,17 +1,21 @@
-import os
 import json
+from pathlib import Path
 
-DEFAULT_WOW_PATH = "/home/Ochrus/.local/share/Steam/steamapps/compatdata/4206469918/pfx/drive_c/Program Files (x86)/World of Warcraft/_retail_/Interface/AddOns/"
+DEFAULT_WOW_PATH = str(Path.home() / ".local/share/Steam/steamapps/compatdata/4206469918/pfx/drive_c/Program Files (x86)/World of Warcraft/_retail_/Interface/AddOns/")
 
 class ConfigManager:
     def __init__(self, config_path="config.json"):
-        self.config_path = config_path
+        self.config_path = Path(config_path)
         self.config = self.load_config()
 
     def load_config(self):
-        if os.path.exists(self.config_path):
-            with open(self.config_path, 'r') as f:
-                return json.load(f)
+        if self.config_path.exists():
+            try:
+                with self.config_path.open('r') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, IOError):
+                # If the config file is corrupted or can't be read, fall back to defaults
+                pass
         return {"wow_path": DEFAULT_WOW_PATH}
 
     def get_wow_path(self):
@@ -19,5 +23,5 @@ class ConfigManager:
 
     def save_config(self, wow_path):
         self.config["wow_path"] = wow_path
-        with open(self.config_path, 'w') as f:
+        with self.config_path.open('w') as f:
             json.dump(self.config, f, indent=2)
