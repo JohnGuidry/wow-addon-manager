@@ -18,7 +18,7 @@ A simple, reliable, and open-source CLI tool to manage World of Warcraft addons 
 ### Steps
 1. Clone this repository:
    ```bash
-   git clone https://github.com/Ochrus/wow-addon-manager.git
+   git clone https://github.com/JohnGuidry/wow-addon-manager
    cd wow-addon-manager
    ```
 2. Install the required dependencies:
