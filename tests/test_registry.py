@@ -1,0 +1,41 @@
+import unittest
+import os
+import json
+from pathlib import Path
+from registry import RegistryManager
+
+class TestRegistry(unittest.TestCase):
+    def setUp(self):
+        self.test_file = "test_registry.json"
+        if os.path.exists(self.test_file):
+            os.remove(self.test_file)
+
+    def tearDown(self):
+        if os.path.exists(self.test_file):
+            os.remove(self.test_file)
+
+    def test_add_remove_addon(self):
+        reg = RegistryManager(self.test_file)
+        reg.add_addon("MyAddon", {"source": "github", "version": "1.0.0", "folders": ["MyAddon"]})
+        self.assertEqual(reg.get_addon("MyAddon")["version"], "1.0.0")
+        reg.remove_addon("MyAddon")
+        self.assertIsNone(reg.get_addon("MyAddon"))
+
+    def test_list_addons(self):
+        reg = RegistryManager(self.test_file)
+        reg.add_addon("Addon1", {"version": "1.0.0"})
+        reg.add_addon("Addon2", {"version": "2.0.0"})
+        addons = reg.list_addons()
+        self.assertEqual(len(addons), 2)
+        self.assertIn("Addon1", addons)
+        self.assertIn("Addon2", addons)
+
+    def test_corrupt_json(self):
+        with open(self.test_file, 'w') as f:
+            f.write("invalid json")
+        reg = RegistryManager(self.test_file)
+        # Should handle error and return empty dict for addons
+        self.assertEqual(reg.list_addons(), {})
+
+if __name__ == "__main__":
+    unittest.main()
