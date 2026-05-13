@@ -4,22 +4,30 @@ import logging
 logger = logging.getLogger(__name__)
 
 class CurseForgeProvider:
-    def __init__(self):
+    def __init__(self, api_key=None):
         # Using a public aggregator URL (placeholder example)
         self.api_base = "https://api.curseforge.com/v1" # Or a mirror
-        self.headers = {"User-Agent": "WAM-Addon-Manager/1.0"}
+        self.headers = {"User-Agent": "WAM-Addon-Manager/1.0", "Accept": "application/json"}
+        if api_key:
+            self.headers["x-api-key"] = api_key
         self.timeout = 10
+        self._cache = {}
 
     def search(self, query):
+        if query in self._cache:
+            return self._cache[query]
+
         # Placeholder for actual aggregator API call
         logger.info(f"Searching CurseForge for {query}...")
         try:
             # This endpoint is a placeholder based on common CurseForge API patterns
             url = f"{self.api_base}/mods/search"
-            params = {"searchFilter": query}
+            params = {"gameId": 1, "searchFilter": query}
             response = requests.get(url, params=params, headers=self.headers, timeout=self.timeout)
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                self._cache[query] = data
+                return data
             else:
                 logger.error(f"CurseForge API error: {response.status_code}")
         except requests.RequestException as e:
@@ -28,7 +36,7 @@ class CurseForgeProvider:
 
     def get_latest_version(self, project_id):
         # Placeholder implementation for fetching version
-        return "1.0.0"
+        return None
 
     def get_download_url(self, project_id):
         # Placeholder implementation for fetching download URL
