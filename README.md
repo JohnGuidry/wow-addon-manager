@@ -8,3 +8,36 @@ A simple, reliable, and open-source CLI tool to manage World of Warcraft addons 
 - **Single-Command Updates:** Update all your managed addons with one command: `wam update`.
 - **Clean Removal:** Safely delete addon folders and their registry entries.
 - **Local Registry:** Tracks installed versions and folder mappings for maximum reliability.
+
+## Installation
+
+### Prerequisites
+- Python 3.x
+- `pip` (Python package installer)
+
+### Steps
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/Ochrus/wow-addon-manager.git
+   cd wow-addon-manager
+   ```
+2. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Quick Start
+
+1. **Configure your Addon Path:**
+   Open `config.json` (created on first run or manually) and set your `wow_path`.
+   *Note: On Linux/Steam, it's often deep inside the `compatdata` folder.*
+
+2. **List your addons:**
+   ```bash
+   python main.py list
+   ```
+
+3. **Install an addon from GitHub:**
+   ```bash
+   python main.py install WeakAuras https://github.com/WeakAuras/WeakAuras2
+   ```
