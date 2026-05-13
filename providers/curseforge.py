@@ -34,10 +34,37 @@ class CurseForgeProvider:
             logger.error(f"Network error searching CurseForge: {e}")
         return []
 
+    def _get_latest_file_info(self, project_id):
+        """Internal helper to fetch the latest file info for WoW Retail (ID 517)."""
+        if project_id in self._cache:
+             return self._cache[project_id]
+             
+        try:
+            # gameVersionTypeId 517 is for WoW Retail
+            url = f"{self.api_base}/mods/{project_id}/files"
+            params = {"gameVersionTypeId": 517, "pageSize": 1}
+            response = requests.get(url, params=params, headers=self.headers, timeout=self.timeout)
+            if response.status_code == 200:
+                files = response.json().get("data", [])
+                if files:
+                    file_info = files[0]
+                    self._cache[project_id] = file_info
+                    return file_info
+            else:
+                logger.error(f"CurseForge API error fetching files for {project_id}: {response.status_code}")
+        except requests.RequestException as e:
+            logger.error(f"Network error fetching CurseForge files for {project_id}: {e}")
+        return None
+
     def get_latest_version(self, project_id):
-        # Placeholder implementation for fetching version
+        file_info = self._get_latest_file_info(project_id)
+        if file_info:
+            # Use fileId or displayName as version. fileId is more reliable for comparison.
+            return str(file_info.get("id"))
         return None
 
     def get_download_url(self, project_id):
-        # Placeholder implementation for fetching download URL
+        file_info = self._get_latest_file_info(project_id)
+        if file_info:
+            return file_info.get("downloadUrl")
         return None

@@ -34,11 +34,39 @@ class TestCurseForgeProvider(unittest.TestCase):
         provider = CurseForgeProvider(api_key="test-key")
         self.assertEqual(provider.headers["x-api-key"], "test-key")
 
-    def test_get_latest_version_skeleton(self):
+    @patch('requests.get')
+    def test_get_latest_version(self, mock_get):
+        mock_get.return_value.json.return_value = {
+            "data": [
+                {
+                    "id": 12345,
+                    "displayName": "MyAddon-v1.2.3.zip",
+                    "downloadUrl": "http://example.com/addon.zip"
+                }
+            ]
+        }
+        mock_get.return_value.status_code = 200
         provider = CurseForgeProvider()
-        # Should return None instead of hardcoded "1.0.0"
-        self.assertIsNone(provider.get_latest_version("123"))
+        version = provider.get_latest_version("54321")
+        self.assertEqual(version, "12345")
+        
+        # Verify gameVersionTypeId 517 is in params
+        args, kwargs = mock_get.call_args
+        self.assertEqual(kwargs['params']['gameVersionTypeId'], 517)
+        self.assertEqual(kwargs['params']['pageSize'], 1)
 
-    def test_get_download_url_skeleton(self):
+    @patch('requests.get')
+    def test_get_download_url(self, mock_get):
+        mock_get.return_value.json.return_value = {
+            "data": [
+                {
+                    "id": 12345,
+                    "displayName": "MyAddon-v1.2.3.zip",
+                    "downloadUrl": "http://example.com/addon.zip"
+                }
+            ]
+        }
+        mock_get.return_value.status_code = 200
         provider = CurseForgeProvider()
-        self.assertIsNone(provider.get_download_url("123"))
+        url = provider.get_download_url("54321")
+        self.assertEqual(url, "http://example.com/addon.zip")

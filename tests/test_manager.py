@@ -78,27 +78,50 @@ class TestAddonManager(unittest.TestCase):
         self.assertFalse(file1.exists())
         self.mock_registry.remove_addon.assert_called_once_with("MyAddon")
 
+    @patch('providers.curseforge.CurseForgeProvider')
     @patch('providers.github.GitHubProvider')
-    def test_update_all(self, mock_github_class):
+    def test_update_all_mixed(self, mock_github_class, mock_curse_class):
         # Setup registry
         self.mock_registry.list_addons.return_value = {
-            "MyAddon": {
+            "GitHubAddon": {
                 "source": "github",
                 "url": "https://github.com/user/repo",
                 "version": "1.0.0",
-                "folders": ["MyAddon"]
+                "folders": ["GitHubAddon"]
+            },
+            "CurseAddon": {
+                "source": "curseforge",
+                "id": "12345",
+                "version": "100",
+                "folders": ["CurseAddon"]
             }
         }
         
         mock_github = mock_github_class.return_value
         mock_github.get_latest_version.return_value = "1.1.0"
-        mock_github.get_download_url.return_value = "http://example.com/addon-1.1.0.zip"
+        mock_github.get_download_url.return_value = "http://example.com/github-1.1.0.zip"
+        
+        mock_curse = mock_curse_class.return_value
+        mock_curse.get_latest_version.return_value = "101"
+        mock_curse.get_download_url.return_value = "http://example.com/curse-101.zip"
+        
+        # Setup config for API key
+        self.mock_config.config = {"api_key": "test-key"}
         
         with patch.object(self.manager, '_download_and_extract') as mock_download:
             self.manager.update_all()
-            mock_download.assert_called_once_with(
-                "MyAddon", "http://example.com/addon-1.1.0.zip", "1.1.0", "github", "https://github.com/user/repo"
+            
+            # Check GitHub update
+            mock_download.assert_any_call(
+                "GitHubAddon", "http://example.com/github-1.1.0.zip", "1.1.0", "github", "https://github.com/user/repo"
             )
+            
+            # Check CurseForge update
+            mock_download.assert_any_call(
+                "CurseAddon", "http://example.com/curse-101.zip", "101", "curseforge", "12345"
+            )
+            
+            self.assertEqual(mock_download.call_count, 2)
 
     @patch('requests.get')
     def test_download_and_extract_robust(self, mock_get):

@@ -65,19 +65,33 @@ class AddonManager:
             print(f"Checking updates for {name}...")
             source = info.get("source")
             url = info.get("url")
+            project_id = info.get("id")
             current_version = info.get("version")
+            
+            provider = None
+            version_id = None
             
             if source == "github":
                 from providers.github import GitHubProvider
                 provider = GitHubProvider()
-                latest_version = provider.get_latest_version(url)
+                version_id = url
+            elif source == "curseforge":
+                from providers.curseforge import CurseForgeProvider
+                api_key = self.config.config.get("api_key")
+                provider = CurseForgeProvider(api_key=api_key)
+                version_id = project_id
+            
+            if provider and version_id:
+                latest_version = provider.get_latest_version(version_id)
                 if latest_version and latest_version != current_version:
                     print(f"Updating {name} from {current_version} to {latest_version}")
-                    download_url = provider.get_download_url(url)
+                    download_url = provider.get_download_url(version_id)
                     if download_url:
-                        self._download_and_extract(name, download_url, latest_version, source, url)
+                        self._download_and_extract(name, download_url, latest_version, source, url or project_id)
                 else:
                     print(f"{name} is up to date.")
+            else:
+                print(f"Skipping {name}: Unknown source or missing ID.")
 
     def remove_addon(self, name):
         info = self.registry.get_addon(name)
@@ -95,3 +109,40 @@ class AddonManager:
             print(f"Removed {name}")
         else:
             print(f"Addon {name} not found in registry.")
+
+    def sync_with_folder(self):
+        """Scans the AddOns folder and imports known addons into the registry."""
+        print("Scanning AddOns folder for existing addons...")
+        found_addons = self.scanner.scan()
+        current_registry = self.registry.list_addons()
+        
+        imported_count = 0
+        for folder_name, metadata in found_addons.items():
+            # Skip if already managed
+            if any(folder_name in info.get("folders", []) for info in current_registry.values()):
+                continue
+                
+            source = None
+            id_val = None
+            url = None
+            
+            # Try to identify source from TOC metadata
+            if "X-Curse-Project-ID" in metadata:
+                source = "curseforge"
+                id_val = metadata["X-Curse-Project-ID"]
+            elif "X-GitHub-Repository" in metadata:
+                source = "github"
+                url = f"https://github.com/{metadata['X-GitHub-Repository']}"
+                
+            if source:
+                print(f"Found manageable addon: {folder_name} ({source})")
+                self.registry.add_addon(folder_name, {
+                    "source": source,
+                    "id": id_val,
+                    "url": url,
+                    "version": metadata.get("Version", "0.0.0"),
+                    "folders": [folder_name] # Simplification: assume 1:1 for discovered folders
+                })
+                imported_count += 1
+        
+        print(f"Sync complete. Imported {imported_count} new addons to registry.")

@@ -5,7 +5,7 @@ A simple, reliable, and open-source CLI tool to manage World of Warcraft addons 
 ## Features
 - **URL Installation:** Install addons directly from GitHub repository URLs.
 - **CurseForge Integration:** Search and install addons via a CurseForge aggregator.
-- **Single-Command Updates:** Update all your managed addons with one command: `wam update`.
+- **Single-Command Updates:** Update all your managed addons with one command: `python main.py update`.
 - **Clean Removal:** Safely delete addon folders and their registry entries.
 - **Local Registry:** Tracks installed versions and folder mappings for maximum reliability.
 
@@ -29,17 +29,24 @@ A simple, reliable, and open-source CLI tool to manage World of Warcraft addons 
 ## Quick Start
 
 1. **Configure your Addon Path:**
-   Open `config.json` (created on first run or manually) and set your `wow_path`.
+   ```bash
+   python main.py config --path "/path/to/World of Warcraft/_retail_/Interface/AddOns/"
+   ```
    *Note: On Linux/Steam, it's often deep inside the `compatdata` folder.*
 
-2. **List your addons:**
+2. **(Optional) Set your CurseForge API key:**
    ```bash
-   python main.py list
+   python main.py config --api-key "your_key_here"
    ```
 
-3. **Install an addon from GitHub:**
+3. **Sync your existing addons:**
    ```bash
-   python main.py install WeakAuras https://github.com/WeakAuras/WeakAuras2
+   python main.py sync
+   ```
+
+4. **Update everything:**
+   ```bash
+   python main.py update
    ```
 
 ## Usage
@@ -48,7 +55,9 @@ WAM provides a simple set of commands to manage your library:
 
 | Command | Description |
 | --- | --- |
+| `python main.py config` | View or set your WoW AddOns path and CurseForge API key. |
 | `python main.py list` | List all addons currently managed by WAM. |
+| `python main.py sync` | Import existing addons from your WoW folder into WAM. |
 | `python main.py install <name> <url>` | Install a new addon from a GitHub URL. |
 | `python main.py update` | Check for updates and install them for all managed addons. |
 | `python main.py remove <name>` | Delete an addon's folders and remove it from the registry. |
