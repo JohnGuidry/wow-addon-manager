@@ -41,3 +41,29 @@ A simple, reliable, and open-source CLI tool to manage World of Warcraft addons 
    ```bash
    python main.py install WeakAuras https://github.com/WeakAuras/WeakAuras2
    ```
+
+## Usage
+
+WAM provides a simple set of commands to manage your library:
+
+| Command | Description |
+| --- | --- |
+| `python main.py list` | List all addons currently managed by WAM. |
+| `python main.py install <name> <url>` | Install a new addon from a GitHub URL. |
+| `python main.py update` | Check for updates and install them for all managed addons. |
+| `python main.py remove <name>` | Delete an addon's folders and remove it from the registry. |
+
+## Configuration
+
+WAM uses a `config.json` file for its settings.
+
+- `wow_path`: The absolute path to your World of Warcraft `_retail_/Interface/AddOns` directory.
+- `api_key`: (Optional) Your CurseForge API key for searching and metadata.
+
+Example `config.json`:
+```json
+{
+  "wow_path": "/path/to/World of Warcraft/_retail_/Interface/AddOns/",
+  "api_key": "your_api_key_here"
+}
+```
