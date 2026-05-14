@@ -153,9 +153,25 @@ class AddonManager:
             if "X-Curse-Project-ID" in metadata:
                 source = "curseforge"
                 id_val = metadata["X-Curse-Project-ID"]
+            elif "X-Curse-Packaged-With-Project-ID" in metadata:
+                source = "curseforge"
+                id_val = metadata["X-Curse-Packaged-With-Project-ID"]
             elif "X-GitHub-Repository" in metadata:
                 source = "github"
                 url = f"https://github.com/{metadata['X-GitHub-Repository']}"
+            elif "X-Website" in metadata:
+                ws = metadata["X-Website"].lower()
+                if "github.com" in ws:
+                    source = "github"
+                    url = metadata["X-Website"]
+                elif "curseforge.com" in ws:
+                    source = "curseforge"
+                    # Try to extract slug from URL: .../wow/addons/slug
+                    parts = metadata["X-Website"].strip("/").split("/")
+                    if "addons" in parts:
+                        idx = parts.index("addons")
+                        if idx + 1 < len(parts):
+                            id_val = parts[idx+1]
                 
             if source:
                 key = (source, id_val or url)
@@ -167,9 +183,22 @@ class AddonManager:
                 groups[key]["folders"].append(folder_name)
         
         imported_count = 0
+        cf_provider = None
+        
         for (source, identity), data in groups.items():
             metadata = data["metadata"]
             folders = data["folders"]
+            
+            # If identity is a slug (not numeric), try to resolve it to an ID for CurseForge
+            if source == "curseforge" and not identity.isdigit():
+                if cf_provider is None:
+                    from providers.curseforge import CurseForgeProvider
+                    api_key = self.config.config.get("api_key")
+                    cf_provider = CurseForgeProvider(api_key=api_key)
+                
+                resolved_id = cf_provider.get_id_by_slug(identity)
+                if resolved_id:
+                    identity = resolved_id
             
             # Use the first folder name as the addon name in registry
             name = folders[0]

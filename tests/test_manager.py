@@ -164,5 +164,28 @@ class TestAddonManager(unittest.TestCase):
         self.assertEqual(len(folders), 2)
         self.assertEqual(args[1]["id"], "12345")
 
+    @patch('providers.curseforge.CurseForgeProvider')
+    def test_sync_with_folder_x_website(self, mock_curse_class):
+        # Mock scanner to return an addon with X-Website but no ID
+        self.mock_scanner.scan.return_value = {
+            "Auctionator": {
+                "X-Website": "https://www.curseforge.com/wow/addons/auctionator",
+                "Version": "321"
+            }
+        }
+        self.mock_registry.list_addons.return_value = {}
+        
+        # Mock CurseForgeProvider to resolve slug
+        mock_curse = mock_curse_class.return_value
+        mock_curse.get_id_by_slug.return_value = "15682"
+        
+        self.manager.sync_with_folder()
+        
+        # Should call add_addon with the resolved ID
+        self.mock_registry.add_addon.assert_called_once()
+        args, kwargs = self.mock_registry.add_addon.call_args
+        self.assertEqual(args[1]["id"], "15682")
+        self.assertEqual(args[1]["source"], "curseforge")
+
 if __name__ == "__main__":
     unittest.main()

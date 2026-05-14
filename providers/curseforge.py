@@ -70,6 +70,27 @@ class CurseForgeProvider:
             logger.error(f"Network error fetching CurseForge files for {project_id}: {e}")
         return None
 
+    def get_id_by_slug(self, slug):
+        """Attempts to find the numeric project ID for a given slug."""
+        logger.info(f"Resolving slug '{slug}' to ID...")
+        try:
+            url = f"{self.api_base}/mods/search"
+            # gameId 1 is WoW. slug parameter might work, or searchFilter.
+            params = {"gameId": 1, "slug": slug}
+            response = requests.get(url, params=params, headers=self.headers, timeout=self.timeout)
+            if response.status_code == 200:
+                data = response.json().get("data", [])
+                if data:
+                    # Match by exact slug just in case
+                    for mod in data:
+                        if mod.get("slug") == slug:
+                            return str(mod.get("id"))
+            else:
+                logger.error(f"CurseForge API error resolving slug: {response.status_code}")
+        except requests.RequestException as e:
+            logger.error(f"Network error resolving CurseForge slug: {e}")
+        return None
+
     def get_latest_version(self, project_id):
         file_info = self._get_latest_file_info(project_id)
         if file_info:
