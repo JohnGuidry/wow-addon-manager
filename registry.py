@@ -15,15 +15,19 @@ class RegistryManager:
         if not self.path.exists():
             return {"installed_addons": {}}
         
+        if self.path.stat().st_size == 0:
+            logger.debug(f"Registry file at {self.path} is empty. Initializing new data.")
+            return {"installed_addons": {}}
+        
         try:
             with self.path.open('r') as f:
                 data = json.load(f)
                 if not isinstance(data, dict) or "installed_addons" not in data:
-                    logger.warning(f"Malformed registry file at {self.path}. Initializing new data.")
+                    logger.debug(f"Malformed registry file at {self.path}. Initializing new data.")
                     return {"installed_addons": {}}
                 return data
         except (json.JSONDecodeError, IOError) as e:
-            logger.error(f"Error loading registry from {self.path}: {e}")
+            logger.debug(f"Error loading registry from {self.path}: {e}")
             return {"installed_addons": {}}
 
     def _save(self):

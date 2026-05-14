@@ -25,7 +25,7 @@ class TestAddonManager(unittest.TestCase):
 
     @patch('requests.get')
     @patch('providers.github.GitHubProvider')
-    def test_install_from_url_github(self, mock_github_class, mock_get):
+    def test_install_addon_github(self, mock_github_class, mock_get):
         # Mock GitHubProvider
         mock_github = mock_github_class.return_value
         mock_github.get_download_url.return_value = "http://example.com/addon.zip"
@@ -45,7 +45,7 @@ class TestAddonManager(unittest.TestCase):
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
         
-        self.manager.install_from_url("MyAddon", "https://github.com/user/repo")
+        self.manager.install_addon("MyAddon", "https://github.com/user/repo")
         
         # Verify
         self.mock_registry.add_addon.assert_called_once()
@@ -144,6 +144,25 @@ class TestAddonManager(unittest.TestCase):
         self.assertIn("Folder1", folders)
         self.assertIn("file_at_root.txt", folders)
         self.assertEqual(len(folders), 2)
+
+    def test_sync_with_folder_grouping(self):
+        # Mock scanner to return multiple folders for the same project
+        self.mock_scanner.scan.return_value = {
+            "AddonMain": {"X-Curse-Project-ID": "12345", "Version": "1.0"},
+            "AddonSub": {"X-Curse-Project-ID": "12345", "Version": "1.0"}
+        }
+        self.mock_registry.list_addons.return_value = {}
+        
+        self.manager.sync_with_folder()
+        
+        # Should call add_addon once with both folders
+        self.mock_registry.add_addon.assert_called_once()
+        args, kwargs = self.mock_registry.add_addon.call_args
+        folders = args[1]["folders"]
+        self.assertIn("AddonMain", folders)
+        self.assertIn("AddonSub", folders)
+        self.assertEqual(len(folders), 2)
+        self.assertEqual(args[1]["id"], "12345")
 
 if __name__ == "__main__":
     unittest.main()

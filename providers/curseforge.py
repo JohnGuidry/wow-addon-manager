@@ -29,7 +29,14 @@ class CurseForgeProvider:
                 self._cache[query] = data
                 return data
             else:
-                logger.error(f"CurseForge API error: {response.status_code}")
+                try:
+                    error_data = response.json()
+                    logger.error(f"CurseForge API error: {response.status_code} - {error_data}")
+                except:
+                    logger.error(f"CurseForge API error: {response.status_code} - Raw response: {response.text[:500]}")
+                
+                if response.status_code == 403:
+                    logger.error("Forbidden (403): This usually means your API key is invalid or not authorized for the Core API (which requires a separate application).")
         except requests.RequestException as e:
             logger.error(f"Network error searching CurseForge: {e}")
         return []
@@ -51,7 +58,14 @@ class CurseForgeProvider:
                     self._cache[project_id] = file_info
                     return file_info
             else:
-                logger.error(f"CurseForge API error fetching files for {project_id}: {response.status_code}")
+                try:
+                    error_data = response.json()
+                    logger.error(f"CurseForge API error fetching files for {project_id}: {response.status_code} - {error_data}")
+                except:
+                    logger.error(f"CurseForge API error fetching files for {project_id}: {response.status_code} - Raw response: {response.text[:500]}")
+                
+                if response.status_code == 403:
+                    logger.error("Forbidden (403): This usually means your API key is invalid or not authorized for the Core API (which requires a separate application).")
         except requests.RequestException as e:
             logger.error(f"Network error fetching CurseForge files for {project_id}: {e}")
         return None

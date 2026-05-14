@@ -4,25 +4,27 @@ import logging
 logger = logging.getLogger(__name__)
 
 class GitHubProvider:
-    def __init__(self):
+    def __init__(self, token=None):
         self._cache = {}
+        self.headers = {"User-Agent": "WAM-Addon-Manager/1.0"}
+        if token:
+            self.headers["Authorization"] = f"token {token}"
 
     def _get_release_info(self, repo_url):
         repo = repo_url.replace("https://github.com/", "").strip("/")
         if repo in self._cache:
             return self._cache[repo]
 
-        headers = {"User-Agent": "WAM-Addon-Manager/1.0"}
         api_url = f"https://api.github.com/repos/{repo}/releases/latest"
         try:
-            response = requests.get(api_url, headers=headers, timeout=10)
+            response = requests.get(api_url, headers=self.headers, timeout=10)
             if response.status_code == 200:
                 self._cache[repo] = response.json()
                 return self._cache[repo]
             elif response.status_code == 404:
                 logger.info(f"No releases found for {repo}, falling back to tags")
                 tags_url = f"https://api.github.com/repos/{repo}/tags"
-                response = requests.get(tags_url, headers=headers, timeout=10)
+                response = requests.get(tags_url, headers=self.headers, timeout=10)
                 if response.status_code == 200:
                     tags = response.json()
                     if tags:
@@ -38,6 +40,8 @@ class GitHubProvider:
                         logger.error(f"No tags found for {repo}")
                 else:
                     logger.error(f"GitHub API error (tags): {response.status_code} for {tags_url}")
+            elif response.status_code == 403:
+                logger.error(f"GitHub API rate limit exceeded or forbidden: {response.status_code}. Consider setting a GitHub Token in config.")
             else:
                 logger.error(f"GitHub API error (releases): {response.status_code} for {api_url}")
         except requests.RequestException as e:

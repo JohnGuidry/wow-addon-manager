@@ -13,21 +13,36 @@ class AddonManager:
         self.registry = registry
         self.scanner = scanner
 
-    def install_from_url(self, name, url, source="github"):
-        if source == "github" or "github.com" in url:
+    def install_addon(self, name, source_id, source="github"):
+        provider = None
+        version = None
+        download_url = None
+        url = None
+        project_id = None
+
+        if source == "github" or "github.com" in source_id:
             from providers.github import GitHubProvider
-            provider = GitHubProvider()
+            token = self.config.get_github_token()
+            provider = GitHubProvider(token=token)
+            url = source_id
             download_url = provider.get_download_url(url)
             version = provider.get_latest_version(url)
-            
-            if download_url and version:
-                self._download_and_extract(name, download_url, version, "github", url)
-            else:
-                logger.error(f"Could not find download URL or version for {url}")
+            source = "github"
+        elif source == "curseforge" or source_id.isdigit():
+            from providers.curseforge import CurseForgeProvider
+            api_key = self.config.config.get("api_key")
+            provider = CurseForgeProvider(api_key=api_key)
+            project_id = source_id
+            download_url = provider.get_download_url(project_id)
+            version = provider.get_latest_version(project_id)
+            source = "curseforge"
+        
+        if provider and download_url and version:
+            self._download_and_extract(name, download_url, version, source, url or project_id)
         else:
-            logger.error(f"Unsupported source: {source}")
+            logger.error(f"Could not find download URL or version for {source_id}")
 
-    def _download_and_extract(self, name, download_url, version, source, url):
+    def _download_and_extract(self, name, download_url, version, source, identity):
         print(f"Downloading {name} from {download_url}...")
         try:
             r = requests.get(download_url, timeout=30, headers={"User-Agent": "WAM-Addon-Manager/1.0"})
@@ -48,12 +63,17 @@ class AddonManager:
                 
                 z.extractall(addon_path)
                 
-                self.registry.add_addon(name, {
+                addon_info = {
                     "source": source,
-                    "url": url,
                     "version": version,
                     "folders": list(top_level_entries)
-                })
+                }
+                if source == "github":
+                    addon_info["url"] = identity
+                else:
+                    addon_info["id"] = identity
+                
+                self.registry.add_addon(name, addon_info)
                 print(f"Successfully installed {name} version {version}")
         except Exception as e:
             logger.error(f"Failed to install {name}: {e}")
@@ -73,7 +93,8 @@ class AddonManager:
             
             if source == "github":
                 from providers.github import GitHubProvider
-                provider = GitHubProvider()
+                token = self.config.get_github_token()
+                provider = GitHubProvider(token=token)
                 version_id = url
             elif source == "curseforge":
                 from providers.curseforge import CurseForgeProvider
@@ -116,7 +137,9 @@ class AddonManager:
         found_addons = self.scanner.scan()
         current_registry = self.registry.list_addons()
         
-        imported_count = 0
+        # Group folders by their project identity
+        groups = {} # key: (source, id/url), value: {metadata, folders}
+        
         for folder_name, metadata in found_addons.items():
             # Skip if already managed
             if any(folder_name in info.get("folders", []) for info in current_registry.values()):
@@ -135,14 +158,30 @@ class AddonManager:
                 url = f"https://github.com/{metadata['X-GitHub-Repository']}"
                 
             if source:
-                print(f"Found manageable addon: {folder_name} ({source})")
-                self.registry.add_addon(folder_name, {
-                    "source": source,
-                    "id": id_val,
-                    "url": url,
-                    "version": metadata.get("Version", "0.0.0"),
-                    "folders": [folder_name] # Simplification: assume 1:1 for discovered folders
-                })
-                imported_count += 1
+                key = (source, id_val or url)
+                if key not in groups:
+                    groups[key] = {
+                        "metadata": metadata,
+                        "folders": []
+                    }
+                groups[key]["folders"].append(folder_name)
+        
+        imported_count = 0
+        for (source, identity), data in groups.items():
+            metadata = data["metadata"]
+            folders = data["folders"]
+            
+            # Use the first folder name as the addon name in registry
+            name = folders[0]
+            print(f"Found manageable addon: {name} ({source}) with folders: {', '.join(folders)}")
+            
+            self.registry.add_addon(name, {
+                "source": source,
+                "id": identity if source == "curseforge" else None,
+                "url": identity if source == "github" else None,
+                "version": metadata.get("Version", "0.0.0"),
+                "folders": folders
+            })
+            imported_count += 1
         
         print(f"Sync complete. Imported {imported_count} new addons to registry.")

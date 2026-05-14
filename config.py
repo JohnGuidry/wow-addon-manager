@@ -21,14 +21,19 @@ class ConfigManager:
     def get_wow_path(self):
         return self.config.get("wow_path", DEFAULT_WOW_PATH)
 
+    def get_github_token(self):
+        return self.config.get("github_token")
+
     def is_path_valid(self):
         path = Path(self.get_wow_path())
         return path.exists() and path.is_dir()
 
-    def save_config(self, wow_path=None, api_key=None):
+    def save_config(self, wow_path=None, api_key=None, github_token=None):
         if wow_path:
-            self.config["wow_path"] = wow_path
+            self.config["wow_path"] = wow_path.strip()
         if api_key:
-            self.config["api_key"] = api_key
+            self.config["api_key"] = api_key.strip()
+        if github_token:
+            self.config["github_token"] = github_token.strip()
         with self.config_path.open('w') as f:
             json.dump(self.config, f, indent=2)

@@ -80,3 +80,17 @@ class TestGitHubProvider(unittest.TestCase):
             headers={"User-Agent": "WAM-Addon-Manager/1.0"},
             timeout=10
         )
+
+    @patch('requests.get')
+    def test_token_auth(self, mock_get):
+        mock_get.return_value.json.return_value = {"tag_name": "v1.2.3"}
+        mock_get.return_value.status_code = 200
+        provider = GitHubProvider(token="test-token")
+        provider.get_latest_version("owner/repo")
+        
+        # Verify Authorization header is present
+        args, kwargs = mock_get.call_args
+        self.assertEqual(kwargs['headers']['Authorization'], "token test-token")
+
+if __name__ == "__main__":
+    unittest.main()

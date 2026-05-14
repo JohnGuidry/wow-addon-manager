@@ -34,17 +34,27 @@ A simple, reliable, and open-source CLI tool to manage World of Warcraft addons 
    ```
    *Note: On Linux/Steam, it's often deep inside the `compatdata` folder.*
 
-2. **(Optional) Set your CurseForge API key:**
+2. **(Optional) Set your API keys:**
    ```bash
-   python main.py config --api-key "your_key_here"
+   # Set CurseForge API key
+   python main.py config --api-key "your_curseforge_key"
+   
+   # Set GitHub Token (to avoid rate limits)
+   python main.py config --github-token "your_github_token"
    ```
 
-3. **Sync your existing addons:**
+3. **Search and install an addon:**
+   ```bash
+   python main.py search "Details"
+   python main.py install "Details" 61284
+   ```
+
+4. **Sync your existing addons:**
    ```bash
    python main.py sync
    ```
 
-4. **Update everything:**
+5. **Update everything:**
    ```bash
    python main.py update
    ```
@@ -55,10 +65,11 @@ WAM provides a simple set of commands to manage your library:
 
 | Command | Description |
 | --- | --- |
-| `python main.py config` | View or set your WoW AddOns path and CurseForge API key. |
+| `python main.py config` | View or set WoW path, CurseForge key, and GitHub token. |
+| `python main.py search <query>` | Search CurseForge for addons. |
+| `python main.py install <name> <id/url>` | Install from CurseForge ID or GitHub URL. |
 | `python main.py list` | List all addons currently managed by WAM. |
 | `python main.py sync` | Import existing addons from your WoW folder into WAM. |
-| `python main.py install <name> <url>` | Install a new addon from a GitHub URL. |
 | `python main.py update` | Check for updates and install them for all managed addons. |
 | `python main.py remove <name>` | Delete an addon's folders and remove it from the registry. |
 

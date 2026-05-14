@@ -28,18 +28,21 @@ def cli(ctx):
 @cli.command()
 @click.option('--path', help='Set the absolute path to your WoW AddOns directory.')
 @click.option('--api-key', help='Set your CurseForge API key.')
+@click.option('--github-token', help='Set your GitHub Personal Access Token (to avoid rate limits).')
 @click.pass_context
-def config(ctx, path, api_key):
+def config(ctx, path, api_key, github_token):
     """View or update configuration."""
     config_mgr = ctx.obj['config']
-    if path or api_key:
-        config_mgr.save_config(wow_path=path, api_key=api_key)
+    if path or api_key or github_token:
+        config_mgr.save_config(wow_path=path, api_key=api_key, github_token=github_token)
         if path:
             click.echo(f"Success: WoW path set to {path}")
             if not config_mgr.is_path_valid():
                 click.echo("Warning: The provided path does not exist or is not a directory.")
         if api_key:
             click.echo("Success: CurseForge API key updated.")
+        if github_token:
+            click.echo("Success: GitHub token updated.")
     else:
         click.echo(f"Current WoW Path: {config_mgr.get_wow_path()}")
         if config_mgr.is_path_valid():
@@ -47,8 +50,11 @@ def config(ctx, path, api_key):
         else:
             click.echo("Status: Path is INVALID. Use 'python main.py config --path <path>' to fix it.")
         
-        has_key = "Yes" if config_mgr.config.get("api_key") else "No"
-        click.echo(f"CurseForge API Key set: {has_key}")
+        has_cf_key = "Yes" if config_mgr.config.get("api_key") else "No"
+        click.echo(f"CurseForge API Key set: {has_cf_key}")
+        
+        has_gh_token = "Yes" if config_mgr.config.get("github_token") else "No"
+        click.echo(f"GitHub Token set: {has_gh_token}")
 
 def validate_path(ctx):
     config_mgr = ctx.obj['config']
@@ -59,12 +65,36 @@ def validate_path(ctx):
 
 @cli.command()
 @click.argument('name')
-@click.argument('url')
+@click.argument('source_id')
 @click.pass_context
-def install(ctx, name, url):
-    """Install an addon from a URL."""
+def install(ctx, name, source_id):
+    """Install an addon from a GitHub URL or CurseForge ID."""
     validate_path(ctx)
-    ctx.obj['manager'].install_from_url(name, url)
+    ctx.obj['manager'].install_addon(name, source_id)
+
+@cli.command()
+@click.argument('query')
+@click.pass_context
+def search(ctx, query):
+    """Search CurseForge for addons."""
+    from providers.curseforge import CurseForgeProvider
+    api_key = ctx.obj['config'].config.get("api_key")
+    provider = CurseForgeProvider(api_key=api_key)
+    results = provider.search(query)
+    
+    if not results:
+        click.echo("No results found.")
+        return
+        
+    # Standard CurseForge API v1 response has results in a 'data' list
+    data = results if isinstance(results, list) else results.get("data", [])
+    
+    click.echo(f"Search results for '{query}':")
+    for addon in data[:10]:
+        click.echo(f"- {addon.get('name')} (ID: {addon.get('id')})")
+        summary = addon.get('summary', '')
+        if summary:
+            click.echo(f"  {summary[:80]}...")
 
 @cli.command()
 @click.pass_context
