@@ -1,20 +1,35 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from providers.curseforge import CurseForgeProvider
 
 class TestCurseForgeProvider(unittest.TestCase):
     @patch('requests.get')
     def test_search(self, mock_get):
-        mock_get.return_value.json.return_value = [{"name": "DBM", "id": "123"}]
-        mock_get.return_value.status_code = 200
+        # First call (slug) returns empty
+        mock_response_empty = MagicMock()
+        mock_response_empty.json.return_value = {"data": []}
+        mock_response_empty.status_code = 200
+        
+        # Second call (filter) returns data
+        mock_response_data = MagicMock()
+        mock_response_data.json.return_value = [{"name": "DBM", "id": "123"}]
+        mock_response_data.status_code = 200
+        
+        mock_get.side_effect = [mock_response_empty, mock_response_data]
+        
         provider = CurseForgeProvider()
         results = provider.search("DBM")
+        
+        # Results should match the second call
         self.assertEqual(results[0]['name'], "DBM")
         
-        # Verify gameId is in params
-        args, kwargs = mock_get.call_args
-        self.assertEqual(kwargs['params']['gameId'], 1)
-        self.assertEqual(kwargs['params']['searchFilter'], "DBM")
+        # Verify first call was slug
+        args1, kwargs1 = mock_get.call_args_list[0]
+        self.assertEqual(kwargs1['params']['slug'], "dbm")
+        
+        # Verify second call was filter
+        args2, kwargs2 = mock_get.call_args_list[1]
+        self.assertEqual(kwargs2['params']['searchFilter'], "DBM")
 
     @patch('requests.get')
     def test_search_caching(self, mock_get):

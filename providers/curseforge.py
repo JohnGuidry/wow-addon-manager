@@ -17,12 +17,24 @@ class CurseForgeProvider:
         if query in self._cache:
             return self._cache[query]
 
-        # Placeholder for actual aggregator API call
         logger.info(f"Searching CurseForge for {query}...")
         try:
-            # This endpoint is a placeholder based on common CurseForge API patterns
+            # 1. Try slug-based search first (highly accurate for exact names)
             url = f"{self.api_base}/mods/search"
-            params = {"gameId": 1, "searchFilter": query}
+            # Normalize slug (lowercase, replace spaces with dashes)
+            slug = query.lower().replace(" ", "-").strip()
+            params = {"gameId": 1, "classId": 1, "slug": slug}
+            
+            response = requests.get(url, params=params, headers=self.headers, timeout=self.timeout)
+            if response.status_code == 200:
+                json_data = response.json()
+                data = json_data if isinstance(json_data, list) else json_data.get("data", [])
+                if data:
+                    self._cache[query] = json_data
+                    return self._cache[query]
+
+            # 2. Fall back to standard filter search
+            params = {"gameId": 1, "classId": 1, "searchFilter": query, "sortMode": 2}
             response = requests.get(url, params=params, headers=self.headers, timeout=self.timeout)
             if response.status_code == 200:
                 data = response.json()

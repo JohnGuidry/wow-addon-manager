@@ -13,22 +13,14 @@ class AddonManager:
         self.registry = registry
         self.scanner = scanner
 
-    def install_addon(self, name, source_id, source="github"):
+    def install_addon(self, name, source_id, source=None):
         provider = None
         version = None
         download_url = None
         url = None
         project_id = None
 
-        if source == "github" or "github.com" in source_id:
-            from providers.github import GitHubProvider
-            token = self.config.get_github_token()
-            provider = GitHubProvider(token=token)
-            url = source_id
-            download_url = provider.get_download_url(url)
-            version = provider.get_latest_version(url)
-            source = "github"
-        elif source == "curseforge" or source_id.isdigit():
+        if source == "curseforge" or source_id.isdigit():
             from providers.curseforge import CurseForgeProvider
             api_key = self.config.config.get("api_key")
             provider = CurseForgeProvider(api_key=api_key)
@@ -36,6 +28,14 @@ class AddonManager:
             download_url = provider.get_download_url(project_id)
             version = provider.get_latest_version(project_id)
             source = "curseforge"
+        elif source == "github" or "github.com" in source_id:
+            from providers.github import GitHubProvider
+            token = self.config.get_github_token()
+            provider = GitHubProvider(token=token)
+            url = source_id
+            download_url = provider.get_download_url(url)
+            version = provider.get_latest_version(url)
+            source = "github"
         
         if provider and download_url and version:
             self._download_and_extract(name, download_url, version, source, url or project_id)
