@@ -34,12 +34,15 @@ A simple, reliable, and open-source CLI tool to manage World of Warcraft addons 
    ```
    *Note: On Linux/Steam, it's often deep inside the `compatdata` folder.*
 
-2. **(Optional) Set your API keys:**
+2. **Set your API keys:**
+   **Highly recommended:** Setting a CurseForge API key unlocks the full power of WAM.
+   
+   While WAM can manage GitHub addons without any keys, **all CurseForge features (search, install by ID, sync, and update) require a valid CurseForge API key**. You can apply for one at the [CurseForge for Studios Console](https://console.curseforge.com/).
    ```bash
-   # Set CurseForge API key
+   # Set CurseForge API key (Required for CurseForge addons)
    python main.py config --api-key "your_curseforge_key"
    
-   # Set GitHub Token (to avoid rate limits)
+   # Set GitHub Token (Optional, to avoid rate limits)
    python main.py config --github-token "your_github_token"
    ```
 
